@@ -15,7 +15,8 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
   ];
 
   const defaultMO: CostLineItem[] = [
-    { id: 'mo_init', concepto: 'INGRESE LABOR', unidad: 'UNIDAD', valorUnidad: 0, cantidad: 1, total: 0 }
+    { id: 'mo_empaque', concepto: 'EMPAQUE', unidad: 'UNIDAD', valorUnidad: 200, cantidad: 1, total: 200 },
+    { id: 'mo_corte', concepto: 'CORTE', unidad: 'UNIDAD', valorUnidad: 500, cantidad: 1, total: 500 }
   ];
 
   const defaultID: CostLineItem[] = [
@@ -51,6 +52,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
     return {
       ...initialData,
       novedadOCorreria: initialData.novedadOCorreria || '',
+      descripcionPrenda: initialData.descripcionPrenda || '',
       muestras: (initialData.muestras && initialData.muestras.length >= 2) ? initialData.muestras : ['', ''],
       cortes: (initialData.cortes && initialData.cortes.length > 0) ? initialData.cortes : defaultCortes,
       materiaPrima: [
@@ -59,7 +61,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
       ],
       manoDeObra: [
         ...defaultMO,
-        ...initialData.manoDeObra.filter(i => i.concepto !== 'INGRESE LABOR')
+        ...initialData.manoDeObra.filter(i => i.concepto !== 'INGRESE LABOR' && i.concepto !== 'EMPAQUE' && i.concepto !== 'CORTE')
       ],
       insumosDirectos: [
         ...defaultID,
@@ -168,11 +170,14 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
+          <button className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors shadow-sm">
+            <span className="text-xl font-bold">+</span>
+          </button>
           <div className="relative flex items-center">
             <input 
-              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 w-64 pr-10"
+              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 w-40 pr-10"
               placeholder="Referencia..."
               value={sheet.referencia}
               onChange={e => setSheet({...sheet, referencia: e.target.value})}
@@ -182,8 +187,8 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             </svg>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -194,7 +199,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all border ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                   activeTab === tab 
                   ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -224,7 +229,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                 </div>
               </div>
 
-              <div className="w-full aspect-square bg-slate-100 rounded-3xl overflow-hidden border border-slate-200 mb-6 group relative">
+              <div className="w-full aspect-square bg-slate-100 rounded-3xl overflow-hidden border border-slate-200 mb-3 group relative">
                 {sheet.fotoUrl ? (
                   <img src={sheet.fotoUrl} alt="Referencia" className="w-full h-full object-cover" />
                 ) : (
@@ -235,8 +240,17 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                 </div>
               </div>
 
-              <div className="bg-amber-50 rounded-2xl p-6 shadow-sm border border-amber-100 mb-6">
-                <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-4 text-center">Rentabilidad vs Precio</h3>
+              <div className="mb-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Descripción de prenda</label>
+                <input 
+                  value={sheet.descripcionPrenda} 
+                  onChange={e => setSheet({...sheet, descripcionPrenda: e.target.value})} 
+                  className="w-full text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-xl outline-none border border-slate-100" 
+                />
+              </div>
+
+              <div className="bg-amber-50 rounded-2xl p-4 shadow-sm border border-amber-100 mb-4">
+                <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2 text-center">Rentabilidad vs Precio</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center pb-2 border-b border-amber-100">
                     <span className="text-[9px] font-bold text-amber-600 uppercase">Costo Total</span>
@@ -275,7 +289,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Marca</label>
                   <input value={sheet.marca} onChange={e => setSheet({...sheet, marca: e.target.value})} className="w-full text-xs font-bold text-slate-700 bg-slate-50 p-2 rounded-lg outline-none" />
@@ -286,7 +300,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Muestra #1</label>
                   <input value={sheet.muestras[0]} onChange={e => {
@@ -302,13 +316,13 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
               </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Observaciones</label>
                 <textarea 
                   value={sheet.observaciones} 
                   onChange={e => setSheet({...sheet, observaciones: e.target.value})}
-                  className="w-full min-h-[100px] bg-transparent text-xs text-slate-600 italic leading-relaxed outline-none resize-none"
+                  className="w-full min-h-[140px] bg-transparent text-xs text-slate-600 italic leading-relaxed outline-none resize-none"
                 />
               </div>
 
@@ -325,8 +339,8 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
 
           {activeTab === 'inicial' ? (
             <>
-              <div className="bg-orange-100 rounded-[1.5rem] p-6 shadow-sm border border-orange-200">
-                <h3 className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-6 text-center border-b border-orange-200 pb-2">Posibles descuentos</h3>
+              <div className="bg-orange-100 rounded-[1.5rem] p-4 shadow-sm border border-orange-200">
+                <h3 className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-3 text-center border-b border-orange-200 pb-1">Posibles descuentos</h3>
                 <div className="space-y-3">
                    {[15, 10, 5, 0].map(d => {
                      const discountedPrice = roundTo900(sheet.precioVenta * (1 - d/100));
@@ -413,13 +427,13 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
           <CostTable 
             title="Materia Prima" 
             items={currentData.materiaPrima} 
-            color="indigo" 
+            color="coral" 
             onUpdate={(id, field, value) => handleItemUpdate('materiaPrima', id, field, value)}
             onDelete={(id) => removeItem('materiaPrima', id)}
             actions={
               <div className="flex gap-2">
-                <button onClick={() => addItem('materiaPrima', 'TELA / SESGO', 11500, 'METRO')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ TELA / SESGO</button>
-                <button onClick={() => addItem('materiaPrima', 'RESORTE', 500, 'MTS')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ RESORTE</button>
+                <button onClick={() => addItem('materiaPrima', 'TELA / SESGO', 11500, 'METRO')} className="px-3 py-1 bg-rose-50/20 text-white text-[9px] font-bold rounded-lg border border-rose-400 hover:bg-rose-400">+ TELA / SESGO</button>
+                <button onClick={() => addItem('materiaPrima', 'RESORTE', 500, 'MTS')} className="px-3 py-1 bg-rose-50/20 text-white text-[9px] font-bold rounded-lg border border-rose-400 hover:bg-rose-400">+ RESORTE</button>
               </div>
             }
           />
@@ -481,7 +495,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
 const CostTable: React.FC<{ 
   title: string; 
   items: CostLineItem[]; 
-  color: 'indigo' | 'blue' | 'slate' | 'amber' | 'rose';
+  color: 'indigo' | 'blue' | 'slate' | 'amber' | 'rose' | 'coral';
   actions?: React.ReactNode;
   onUpdate: (id: string, field: keyof CostLineItem, value: any) => void;
   onDelete: (id: string) => void;
@@ -492,6 +506,7 @@ const CostTable: React.FC<{
 
   const colors = {
     indigo: 'bg-indigo-600 text-indigo-50 border-indigo-100',
+    coral: 'bg-rose-400 text-rose-50 border-rose-100',
     blue: 'bg-blue-600 text-blue-50 border-blue-100',
     slate: 'bg-slate-700 text-slate-50 border-slate-100',
     amber: 'bg-amber-600 text-amber-50 border-amber-100',

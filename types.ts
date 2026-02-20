@@ -78,6 +78,7 @@ export interface CostSheet {
   coleccion: string;
   disenadora: string;
   nombrePrenda: string;
+  descripcionPrenda: string;
   telaPrincipal: string;
   novedadOCorreria: string;
   fotoUrl?: string;
