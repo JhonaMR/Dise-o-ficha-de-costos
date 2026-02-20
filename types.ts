@@ -61,6 +61,7 @@ export interface CostLineItem {
 
 export interface CutInfo {
   id: string;
+  isSettled?: boolean;
   numeroFicha: string;
   fechaCorte: string;
   cantidadCortada: number;

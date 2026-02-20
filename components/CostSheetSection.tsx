@@ -8,6 +8,7 @@ interface Props {
 
 const CostSheetSection: React.FC<Props> = ({ initialData }) => {
   const [activeTab, setActiveTab] = useState<'inicial' | 'corte1' | 'corte2' | 'corte3' | 'corte4'>('inicial');
+  const [confirmSettle, setConfirmSettle] = useState<number | null>(null);
   
   // Default items
   const defaultMP: CostLineItem[] = [
@@ -152,6 +153,24 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
     setSheet({ ...sheet, precioVenta: roundTo900(newPrice) });
   };
 
+  const settleCut = (index: number) => {
+    const newCortes = [...sheet.cortes];
+    if (newCortes[index]) {
+      newCortes[index] = {
+        ...newCortes[index],
+        isSettled: true,
+        materiaPrima: sheet.materiaPrima.map(item => ({ ...item, id: Math.random().toString() })),
+        manoDeObra: sheet.manoDeObra.map(item => ({ ...item, id: Math.random().toString() })),
+        insumosDirectos: sheet.insumosDirectos.map(item => ({ ...item, id: Math.random().toString() })),
+        insumosIndirectos: sheet.insumosIndirectos.map(item => ({ ...item, id: Math.random().toString() })),
+        provisiones: sheet.provisiones.map(item => ({ ...item, id: Math.random().toString() }))
+      };
+      setSheet({ ...sheet, cortes: newCortes });
+      setActiveTab(`corte${index + 1}` as any);
+      setConfirmSettle(null);
+    }
+  };
+
   const removeItem = (section: any, itemId: string) => {
     const active = getActiveData() as any;
     const newItems = active[section].filter((item: CostLineItem) => item.id !== itemId);
@@ -195,19 +214,50 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             GUARDAR
           </button>
           <div className="flex gap-2">
-            {['inicial', 'corte1', 'corte2', 'corte3', 'corte4'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                  activeTab === tab 
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {tab === 'inicial' ? 'COSTEO INICIAL' : `CORTE #${tab.replace('corte', '')}`}
-              </button>
-            ))}
+            {['inicial', 'corte1', 'corte2', 'corte3', 'corte4'].map((tab, idx) => {
+              if (tab === 'inicial') {
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                      activeTab === tab 
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    COSTEO INICIAL
+                  </button>
+                );
+              }
+
+              const cutIndex = idx - 1;
+              const cut = sheet.cortes[cutIndex];
+              const isSettled = cut?.isSettled;
+              const canSettle = cutIndex === 0 || sheet.cortes[cutIndex - 1]?.isSettled;
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    if (isSettled) {
+                      setActiveTab(tab as any);
+                    } else if (canSettle) {
+                      setConfirmSettle(cutIndex);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    activeTab === tab 
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
+                    : isSettled
+                      ? 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                      : 'bg-white/50 text-slate-300 border-slate-100 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  {`CORTE #${tab.replace('corte', '')}`}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -488,6 +538,38 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
           </div>
         </div>
       </div>
+
+      {confirmSettle !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">¿Asentar Corte #{confirmSettle + 1}?</h3>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                Se copiarán todos los conceptos y valores de la ficha inicial a este corte. Podrás editarlos de forma independiente.
+              </p>
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setConfirmSettle(null)}
+                  className="flex-1 px-6 py-3 rounded-xl text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  onClick={() => settleCut(confirmSettle)}
+                  className="flex-1 px-6 py-3 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-200 transition-colors"
+                >
+                  ASENTAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
