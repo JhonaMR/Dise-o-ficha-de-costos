@@ -75,6 +75,11 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
 
   const formatCur = (v: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
+  const roundTo900 = (val: number) => {
+    if (val <= 0) return 0;
+    return Math.ceil((val - 900) / 1000) * 1000 + 900;
+  };
+
   // Helper to get active data based on tab with safety fallback
   const getActiveData = (): CutInfo | CostSheet => {
     if (activeTab === 'inicial') return sheet;
@@ -137,6 +142,14 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
 
   const totalCantidadCortada = sheet.cortes.reduce((sum, c) => sum + (Number(c.cantidadCortada) || 0), 0);
 
+  const currentRentabilidad = sheet.precioVenta > 0 ? ((sheet.precioVenta - totalCosto) / sheet.precioVenta) * 100 : 0;
+
+  const handleRentabilidadChange = (newRent: number) => {
+    if (newRent >= 100) return;
+    const newPrice = totalCosto / (1 - newRent / 100);
+    setSheet({ ...sheet, precioVenta: roundTo900(newPrice) });
+  };
+
   const removeItem = (section: any, itemId: string) => {
     const active = getActiveData() as any;
     const newItems = active[section].filter((item: CostLineItem) => item.id !== itemId);
@@ -157,7 +170,17 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div className="flex items-center gap-4">
           <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Costeo de Referencia</h2>
+          <div className="relative flex items-center">
+            <input 
+              className="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 w-64 pr-10"
+              placeholder="Referencia..."
+              value={sheet.referencia}
+              onChange={e => setSheet({...sheet, referencia: e.target.value})}
+            />
+            <svg className="w-4 h-4 text-slate-400 absolute right-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
@@ -233,8 +256,16 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-2 rounded-xl border border-amber-200 text-center">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase block">M.R REAL</span>
-                      <p className="text-lg font-black text-amber-600">{sheet.precioVenta > 0 ? (((sheet.precioVenta - totalCosto) / sheet.precioVenta) * 100).toFixed(0) : 0}%</p>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase block">RENTABILIDAD</span>
+                      <div className="flex items-center justify-center gap-1">
+                        <input 
+                          type="number"
+                          value={currentRentabilidad.toFixed(0)}
+                          onChange={e => handleRentabilidadChange(Number(e.target.value))}
+                          className="w-12 text-lg font-black text-amber-600 bg-transparent text-center outline-none"
+                        />
+                        <span className="text-lg font-black text-amber-600">%</span>
+                      </div>
                     </div>
                     <div className="bg-white p-2 rounded-xl border border-amber-200 text-center">
                       <span className="text-[8px] font-bold text-slate-400 uppercase block">Cant. Cortada</span>
@@ -295,22 +326,27 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
           {activeTab === 'inicial' ? (
             <>
               <div className="bg-orange-100 rounded-[1.5rem] p-6 shadow-sm border border-orange-200">
-                <h3 className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-6 text-center border-b border-orange-200 pb-2">DESCUENTOS Y CANALES</h3>
+                <h3 className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-6 text-center border-b border-orange-200 pb-2">Posibles descuentos</h3>
                 <div className="space-y-3">
-                   {[15, 10, 5, 0].map(d => (
-                     <div key={d} className="flex justify-between text-xs font-bold border-b border-orange-200/50 pb-1">
-                       <span className="text-orange-600">DESC {d}%</span>
-                       <span className="text-slate-700">{formatCur(sheet.precioVenta * (1 - d/100))}</span>
-                     </div>
-                   ))}
+                   {[15, 10, 5, 0].map(d => {
+                     const discountedPrice = roundTo900(sheet.precioVenta * (1 - d/100));
+                     const margin = discountedPrice > 0 ? ((discountedPrice - totalCosto) / discountedPrice) * 100 : 0;
+                     return (
+                       <div key={d} className="flex justify-between text-[10px] font-bold border-b border-orange-200/50 pb-1 gap-2">
+                         <span className="text-orange-600 w-16">DESC {d}%</span>
+                         <span className="text-slate-700 flex-1 text-right">{formatCur(discountedPrice)}</span>
+                         <span className="text-orange-500 w-12 text-right">{margin.toFixed(0)}%</span>
+                       </div>
+                     );
+                   })}
                 </div>
               </div>
 
-              <div className="bg-orange-100 rounded-[1.5rem] p-6 shadow-sm border border-orange-200">
+              <div className="bg-orange-100 rounded-[1.5rem] p-4 shadow-sm border border-orange-200">
                 <p className="text-[9px] font-black text-orange-600 uppercase text-center mb-2 tracking-widest">MARGEN GANANCIA CLIENTE</p>
-                <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-orange-200 shadow-sm">
+                <div className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-orange-200 shadow-sm">
                   <span className="text-xs font-black text-orange-500">35%</span>
-                  <span className="text-lg font-black text-slate-800">{formatCur(sheet.precioVenta * 1.35)}</span>
+                  <span className="text-base font-black text-slate-800">{formatCur(roundTo900(sheet.precioVenta * 1.35))}</span>
                 </div>
               </div>
             </>
@@ -382,7 +418,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             onDelete={(id) => removeItem('materiaPrima', id)}
             actions={
               <div className="flex gap-2">
-                <button onClick={() => addItem('materiaPrima', 'TELA O SESGO', 11500, 'METRO')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ TELA/SESGO</button>
+                <button onClick={() => addItem('materiaPrima', 'TELA / SESGO', 11500, 'METRO')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ TELA / SESGO</button>
                 <button onClick={() => addItem('materiaPrima', 'RESORTE', 500, 'MTS')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ RESORTE</button>
               </div>
             }
@@ -506,12 +542,14 @@ const CostTable: React.FC<{
                   />
                 </td>
                 <td className="px-4 py-3 text-right">
-                   <input 
-                    type="number"
-                    className="w-20 bg-transparent text-slate-600 font-bold text-right outline-none" 
-                    value={item.valorUnidad}
-                    onChange={(e) => onUpdate(item.id, 'valorUnidad', Number(e.target.value))}
-                  />
+                   <div className="bg-slate-50 border border-slate-100 rounded-lg px-1 shadow-inner">
+                     <input 
+                      type="number"
+                      className="w-20 bg-transparent text-slate-600 font-bold text-right outline-none" 
+                      value={item.valorUnidad}
+                      onChange={(e) => onUpdate(item.id, 'valorUnidad', Number(e.target.value))}
+                    />
+                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
                    <input 
