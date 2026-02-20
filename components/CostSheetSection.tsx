@@ -18,15 +18,15 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
     { id: 'mo_init', concepto: 'INGRESE LABOR', unidad: 'UNIDAD', valorUnidad: 0, cantidad: 1, total: 0 }
   ];
 
-  const defaultID: CostLineItem[] = [];
-
-  const defaultII: CostLineItem[] = [
-    { id: 'ii1', concepto: 'MARQUILLA', unidad: 'UNIDAD', valorUnidad: 70, cantidad: 1, total: 70 },
-    { id: 'ii2', concepto: 'MARQUILLA TECNICA', unidad: 'UNIDAD', valorUnidad: 10, cantidad: 1, total: 10 },
-    { id: 'ii3', concepto: 'ETIQUETA', unidad: 'UNIDAD', valorUnidad: 130, cantidad: 1, total: 130 },
-    { id: 'ii4', concepto: 'CODIGO DE BARRAS', unidad: 'UNIDAD', valorUnidad: 10, cantidad: 1, total: 10 },
-    { id: 'ii5', concepto: 'BOLSA', unidad: 'UNIDAD', valorUnidad: 94, cantidad: 1, total: 94 },
+  const defaultID: CostLineItem[] = [
+    { id: 'id1', concepto: 'MARQUILLA', unidad: 'UNIDAD', valorUnidad: 70, cantidad: 1, total: 70 },
+    { id: 'id2', concepto: 'MARQUILLA TECNICA', unidad: 'UNIDAD', valorUnidad: 10, cantidad: 1, total: 10 },
+    { id: 'id3', concepto: 'ETIQUETA', unidad: 'UNIDAD', valorUnidad: 130, cantidad: 1, total: 130 },
+    { id: 'id4', concepto: 'CODIGO DE BARRAS', unidad: 'UNIDAD', valorUnidad: 10, cantidad: 1, total: 10 },
+    { id: 'id5', concepto: 'BOLSA', unidad: 'UNIDAD', valorUnidad: 94, cantidad: 1, total: 94 },
   ];
+
+  const defaultII: CostLineItem[] = [];
 
   const defaultProvisiones: CostLineItem[] = [
     { id: 'p1', concepto: 'PROV. CARTERA', unidad: 'UNIDAD', valorUnidad: 200, cantidad: 1, total: 200 },
@@ -61,11 +61,11 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
         ...defaultMO,
         ...initialData.manoDeObra.filter(i => i.concepto !== 'INGRESE LABOR')
       ],
-      insumosDirectos: initialData.insumosDirectos.length > 0 ? initialData.insumosDirectos : [...defaultID],
-      insumosIndirectos: [
-        ...defaultII,
-        ...initialData.insumosIndirectos.filter(i => !defaultII.some(d => d.concepto === i.concepto))
+      insumosDirectos: [
+        ...defaultID,
+        ...initialData.insumosDirectos.filter(i => !defaultID.some(d => d.concepto === i.concepto))
       ],
+      insumosIndirectos: initialData.insumosIndirectos.length > 0 ? initialData.insumosIndirectos : [...defaultII],
       provisiones: [
         ...defaultProvisiones,
         ...initialData.provisiones.filter(i => !defaultProvisiones.some(d => d.concepto === i.concepto))
@@ -135,6 +135,23 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
 
   const totalProyectado = calculateTotal(sheet.materiaPrima) + calculateTotal(sheet.manoDeObra) + calculateTotal(sheet.insumosDirectos) + calculateTotal(sheet.insumosIndirectos) + calculateTotal(sheet.provisiones);
 
+  const totalCantidadCortada = sheet.cortes.reduce((sum, c) => sum + (Number(c.cantidadCortada) || 0), 0);
+
+  const removeItem = (section: any, itemId: string) => {
+    const active = getActiveData() as any;
+    const newItems = active[section].filter((item: CostLineItem) => item.id !== itemId);
+    updateActiveSection(section, newItems);
+  };
+
+  const updateCutInfo = (field: keyof CutInfo, value: any) => {
+    const index = parseInt(activeTab.replace('corte', '')) - 1;
+    const newCortes = [...sheet.cortes];
+    if (newCortes[index]) {
+      newCortes[index] = { ...newCortes[index], [field]: value };
+      setSheet({ ...sheet, cortes: newCortes });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
@@ -142,20 +159,28 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
           <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
           <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Costeo de Referencia</h2>
         </div>
-        <div className="flex gap-2">
-          {['inicial', 'corte1', 'corte2', 'corte3', 'corte4'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all border ${
-                activeTab === tab 
-                ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
-                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {tab === 'inicial' ? 'COSTEO INICIAL' : `CORTE #${tab.replace('corte', '')}`}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            GUARDAR
+          </button>
+          <div className="flex gap-2">
+            {['inicial', 'corte1', 'corte2', 'corte3', 'corte4'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all border ${
+                  activeTab === tab 
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200' 
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {tab === 'inicial' ? 'COSTEO INICIAL' : `CORTE #${tab.replace('corte', '')}`}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -163,11 +188,11 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200">
             <div className="mb-6">
-              <div className="relative flex items-center justify-center mb-4">
+              <div className="relative flex items-center mb-4">
                 <input 
                   value={sheet.referencia}
                   onChange={e => setSheet({...sheet, referencia: e.target.value})}
-                  className="text-2xl font-black text-slate-900 bg-transparent border-b border-transparent focus:border-amber-400 outline-none text-center w-full px-20"
+                  className="text-2xl font-black text-slate-900 bg-transparent border-b border-transparent focus:border-amber-400 outline-none text-left w-full pr-20"
                 />
                 <div className="absolute right-0">
                   <button className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-colors border border-slate-200 whitespace-nowrap">
@@ -184,6 +209,38 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
                 )}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button className="bg-white text-slate-800 px-4 py-2 rounded-xl text-xs font-bold">Cambiar Foto</button>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 rounded-2xl p-6 shadow-sm border border-amber-100 mb-6">
+                <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-4 text-center">Rentabilidad vs Precio</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-amber-100">
+                    <span className="text-[9px] font-bold text-amber-600 uppercase">Costo Total</span>
+                    <p className="text-base font-black text-slate-800">{formatCur(totalCosto)}</p>
+                  </div>
+                  <div className="pb-2">
+                    <label className="text-[9px] font-bold text-amber-600 uppercase block mb-1">Precio de Venta</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-black text-lg">$</span>
+                      <input 
+                        type="number"
+                        value={sheet.precioVenta}
+                        onChange={e => setSheet({...sheet, precioVenta: Number(e.target.value)})}
+                        className="w-full pl-8 p-3 rounded-xl bg-white border-2 border-emerald-200 font-black text-2xl text-emerald-600 outline-none shadow-sm focus:border-emerald-400 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-2 rounded-xl border border-amber-200 text-center">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase block">M.R REAL</span>
+                      <p className="text-lg font-black text-amber-600">{sheet.precioVenta > 0 ? (((sheet.precioVenta - totalCosto) / sheet.precioVenta) * 100).toFixed(0) : 0}%</p>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-amber-200 text-center">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase block">Cant. Cortada</span>
+                      <p className="text-lg font-black text-indigo-600">{totalCantidadCortada}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -235,40 +292,9 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             </div>
           </div>
 
-          <div className="bg-amber-50 rounded-[2rem] p-8 shadow-sm border border-amber-100">
-            <h3 className="text-xs font-black text-amber-700 uppercase tracking-widest mb-6 flex items-center gap-2">Rentabilidad vs Precio</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-2 border-b border-amber-100">
-                <span className="text-[10px] font-bold text-amber-600 uppercase">Costo Total</span>
-                <p className="text-lg font-black text-slate-800">{formatCur(totalCosto)}</p>
-              </div>
-              <div className="pb-2">
-                <label className="text-[10px] font-bold text-amber-600 uppercase block mb-1">Precio de Venta</label>
-                <div className="relative">
-                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 font-black text-xl">$</span>
-                   <input 
-                    type="number"
-                    value={sheet.precioVenta}
-                    onChange={e => setSheet({...sheet, precioVenta: Number(e.target.value)})}
-                    className="w-full pl-10 p-4 rounded-2xl bg-white border-2 border-emerald-200 font-black text-3xl text-emerald-600 outline-none shadow-sm focus:border-emerald-400 transition-all"
-                  />
-                </div>
-                <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase text-right">
-                  P. Confeccionista: <span className="text-slate-500">{formatCur(sheet.precioVenta + 500)}</span>
-                </p>
-              </div>
-              <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-amber-200">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">M.R REAL</span>
-                <div className="text-right">
-                  <p className="text-xl font-black text-amber-600">{sheet.precioVenta > 0 ? (((sheet.precioVenta - totalCosto) / sheet.precioVenta) * 100).toFixed(0) : 0}%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {activeTab === 'inicial' ? (
             <>
-              <div className="bg-orange-100 rounded-[2rem] p-8 shadow-sm border border-orange-200">
+              <div className="bg-orange-100 rounded-[1.5rem] p-6 shadow-sm border border-orange-200">
                 <h3 className="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-6 text-center border-b border-orange-200 pb-2">DESCUENTOS Y CANALES</h3>
                 <div className="space-y-3">
                    {[15, 10, 5, 0].map(d => (
@@ -320,15 +346,30 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 grid grid-cols-3 gap-6">
                <div>
                  <label className="text-[10px] font-black text-indigo-400 uppercase block mb-1">Ficha de Corte</label>
-                 <input className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" placeholder="Número..." />
+                 <input 
+                  className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" 
+                  placeholder="Número..." 
+                  value={(currentData as CutInfo).numeroFicha || ''}
+                  onChange={e => updateCutInfo('numeroFicha', e.target.value)}
+                />
                </div>
                <div>
                  <label className="text-[10px] font-black text-indigo-400 uppercase block mb-1">Fecha de Corte</label>
-                 <input type="date" className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" />
+                 <input 
+                  type="date" 
+                  className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" 
+                  value={(currentData as CutInfo).fechaCorte || ''}
+                  onChange={e => updateCutInfo('fechaCorte', e.target.value)}
+                />
                </div>
                <div>
                  <label className="text-[10px] font-black text-indigo-400 uppercase block mb-1">Cant. Cortada</label>
-                 <input type="number" className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" />
+                 <input 
+                  type="number" 
+                  className="w-full p-3 rounded-xl bg-white border border-indigo-200 outline-none text-xs font-bold" 
+                  value={(currentData as CutInfo).cantidadCortada || 0}
+                  onChange={e => updateCutInfo('cantidadCortada', Number(e.target.value))}
+                />
                </div>
             </div>
           )}
@@ -338,6 +379,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             items={currentData.materiaPrima} 
             color="indigo" 
             onUpdate={(id, field, value) => handleItemUpdate('materiaPrima', id, field, value)}
+            onDelete={(id) => removeItem('materiaPrima', id)}
             actions={
               <div className="flex gap-2">
                 <button onClick={() => addItem('materiaPrima', 'TELA O SESGO', 11500, 'METRO')} className="px-3 py-1 bg-indigo-50/20 text-white text-[9px] font-bold rounded-lg border border-indigo-400 hover:bg-indigo-400">+ TELA/SESGO</button>
@@ -351,6 +393,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             items={currentData.manoDeObra} 
             color="blue"
             onUpdate={(id, field, value) => handleItemUpdate('manoDeObra', id, field, value)}
+            onDelete={(id) => removeItem('manoDeObra', id)}
             actions={
               <button onClick={() => addItem('manoDeObra', 'NUEVO PROCESO', 2000)} className="px-3 py-1 bg-blue-50/20 text-white text-[9px] font-bold rounded-lg border border-blue-400 hover:bg-blue-400">+ AÑADIR PROCESO</button>
             }
@@ -361,6 +404,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             items={currentData.insumosDirectos} 
             color="slate"
             onUpdate={(id, field, value) => handleItemUpdate('insumosDirectos', id, field, value)}
+            onDelete={(id) => removeItem('insumosDirectos', id)}
             actions={
                <button onClick={() => addItem('insumosDirectos', 'NUEVO INSUMO')} className="px-3 py-1 bg-slate-50/20 text-white text-[9px] font-bold rounded-lg border border-slate-500 hover:bg-slate-600">+ AGREGAR INSUMOS</button>
             }
@@ -371,6 +415,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             items={currentData.insumosIndirectos} 
             color="amber"
             onUpdate={(id, field, value) => handleItemUpdate('insumosIndirectos', id, field, value)}
+            onDelete={(id) => removeItem('insumosIndirectos', id)}
             actions={
               <button onClick={() => addItem('insumosIndirectos', 'NUEVO INDIRECTO')} className="px-3 py-1 bg-amber-50/20 text-white text-[9px] font-bold rounded-lg border border-amber-400 hover:bg-amber-400">+ AGREGAR INSUMO</button>
             }
@@ -381,6 +426,7 @@ const CostSheetSection: React.FC<Props> = ({ initialData }) => {
             items={currentData.provisiones} 
             color="rose" 
             onUpdate={(id, field, value) => handleItemUpdate('provisiones', id, field, value)}
+            onDelete={(id) => removeItem('provisiones', id)}
           />
 
           <div className="bg-yellow-400 rounded-2xl p-4 shadow-md border-2 border-yellow-500 flex justify-between items-center">
@@ -402,7 +448,8 @@ const CostTable: React.FC<{
   color: 'indigo' | 'blue' | 'slate' | 'amber' | 'rose';
   actions?: React.ReactNode;
   onUpdate: (id: string, field: keyof CostLineItem, value: any) => void;
-}> = ({ title, items = [], color, actions, onUpdate }) => {
+  onDelete: (id: string) => void;
+}> = ({ title, items = [], color, actions, onUpdate, onDelete }) => {
   const formatCur = (v: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
   
   const total = items.reduce((sum, i) => sum + (Number(i.valorUnidad) * Number(i.cantidad)), 0);
@@ -425,6 +472,7 @@ const CostTable: React.FC<{
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
+              <th className="w-10 px-4 py-3"></th>
               <th className="px-6 py-3 font-bold text-slate-400 uppercase tracking-tighter">Concepto</th>
               <th className="px-4 py-3 font-bold text-slate-400 uppercase text-center">UM</th>
               <th className="px-4 py-3 font-bold text-slate-400 uppercase text-right">Vlr. Unit</th>
@@ -434,7 +482,15 @@ const CostTable: React.FC<{
           </thead>
           <tbody className="divide-y divide-slate-50">
             {items.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50/50">
+              <tr key={item.id} className="hover:bg-slate-50/50 group">
+                <td className="px-4 py-3">
+                  <button 
+                    onClick={() => onDelete(item.id)}
+                    className="w-6 h-6 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500 hover:text-white"
+                  >
+                    -
+                  </button>
+                </td>
                 <td className="px-6 py-3">
                    <input 
                     className="w-full bg-transparent font-bold text-slate-700 uppercase outline-none" 
@@ -472,7 +528,7 @@ const CostTable: React.FC<{
           </tbody>
           <tfoot className="bg-slate-50/50">
             <tr>
-              <td colSpan={4} className="px-6 py-3 text-right font-black text-slate-500 text-[10px] uppercase">Total {title}</td>
+              <td colSpan={5} className="px-6 py-3 text-right font-black text-slate-500 text-[10px] uppercase">Total {title}</td>
               <td className="px-6 py-3 text-right font-black text-slate-900">{formatCur(total)}</td>
             </tr>
           </tfoot>
