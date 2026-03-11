@@ -20,11 +20,13 @@ export interface VendorPerformance {
   undDespachadas: number;
   porcentajeSobreVenta: number;
   valorVendido: number;
+  valorDespachado: number;
   valorPrecioLista: number;
   porcentajeDiferencia: number;
   cumplimientoUnd: number;
   cumplimientoVlr: number;
   vlrDifVentaDesp: number;
+  descuentos?: number;
 }
 
 export interface DesignerPerformance {
@@ -101,12 +103,29 @@ export interface CostSheet {
   margenRentabilidad: number;
 }
 
-export interface DashboardData {
+export interface CorreriaReport {
+  id: string;
+  nombre: string;
+  año: number;
   kpis: SalesKPIs;
   vendedores: VendorPerformance[];
   disenadoras: DesignerPerformance[];
-  produccion: ProductionItem[];
-  costos: CostSheet[];
+}
+
+export interface ComparativeDashboardData {
+  añoSeleccionado: number;
+  correrias: CorreriaReport[];
+  resumenAnual: {
+    ventasTotales: number;
+    despachosTotales: number;
+    cumplimientoGlobal: number;
+    unidadesPedidas: number;
+    unidadesDespachadas: number;
+  };
+}
+
+export interface DashboardData {
+  comparativo: ComparativeDashboardData;
 }
 
 export interface InventorySummary {
